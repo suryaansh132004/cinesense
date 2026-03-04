@@ -111,6 +111,9 @@ export default function Page() {
 
   const [trending, setTrending] = useState<SearchResult[]>([]);
   const [trendingError, setTrendingError] = useState<string | null>(null);
+  const [trendingType, setTrendingType] = useState<"movie" | "tv">("movie");
+  const [selectedGenre, setSelectedGenre] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
 
   const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -126,7 +129,11 @@ export default function Page() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/trending");
+        let url = `/api/trending?type=${trendingType}`;
+        if (selectedGenre || selectedYear) {
+          url = `/api/discover?type=${trendingType}&genre=${selectedGenre}&year=${selectedYear}`;
+        }
+        const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to load trending titles.");
         const data = await res.json();
         setTrending(Array.isArray(data?.results) ? data.results : []);
@@ -134,7 +141,7 @@ export default function Page() {
         setTrendingError(e?.message || "Trending fetch failed.");
       }
     })();
-  }, []);
+  }, [trendingType, selectedGenre, selectedYear]);
 
   function resetState() {
     setErrorMsg(null);
@@ -301,23 +308,40 @@ export default function Page() {
                   setTimeout(() => setShowSuggestions(false), 200);
                 }}
                 placeholder="IMDb ID or movie name"
-                className="w-full h-14 rounded-2xl bg-black/5 px-4 text-sm outline-none ring-1 ring-black/10 focus:ring-2 focus:ring-indigo-500 dark:bg-white/5 dark:ring-white/10 dark:focus:ring-indigo-500"
+                className="w-full h-14 rounded-2xl px-4 text-sm cs-input"
               />
             </div>
 
             {/* Suggestions dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute left-0 right-14 top-full mt-2 rounded-2xl bg-white/95 p-2 ring-1 ring-black/10 backdrop-blur-xl dark:bg-black/95 dark:ring-white/10 z-50">
+              <div className="absolute left-0 right-14 top-full mt-2 rounded-2xl p-2 z-50 cs-surface-solid">
                 {suggestions.map((s) => (
                   <button
                     key={s.id}
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       setQuery(s.title);
                       setShowSuggestions(false);
-                      onPickResult(s.id);
+                      resetState();
+                      try {
+                        setMode("searching");
+                        const res = await fetch(`/api/search?query=${encodeURIComponent(s.title)}`);
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data?.error || "Failed to search movies.");
+                        const results: SearchResult[] = data?.results ?? [];
+                        if (results.length === 0) {
+                          setErrorMsg("No results found. Try another name.");
+                          setMode("error");
+                          return;
+                        }
+                        setSearchResults(results);
+                        setMode("selecting");
+                      } catch (e: any) {
+                        setErrorMsg(e?.message || "Something went wrong.");
+                        setMode("error");
+                      }
                     }}
-                    className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-black/5 dark:hover:bg-white/5"
+                    className="flex w-full items-center gap-3 rounded-xl p-2 text-left cs-item-hover"
                   >
                     <div className="h-12 w-8 overflow-hidden rounded bg-black/10 dark:bg-white/10">
                       {posterUrl(s.poster_path, "w200") ? (
@@ -346,13 +370,13 @@ export default function Page() {
 
             <button
               type="submit"
-              className="h-14 px-6 rounded-2xl bg-black text-white font-medium hover:opacity-90 transition dark:bg-white dark:text-black"
+              className="h-14 px-6 rounded-2xl font-medium hover:opacity-90 transition cs-search-btn"
             >
               Search
             </button>
           </form>
 
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-black/5 px-3 py-1 text-[11px] text-black/60 ring-1 ring-black/10 dark:bg-white/5 dark:text-white/60 dark:ring-white/10">
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] text-black/60 cs-pill dark:text-white/60">
             Detected: <span className="font-medium">{inferredInput}</span>
           </div>
 
@@ -360,6 +384,15 @@ export default function Page() {
             <div className="mt-4 flex items-start gap-2 rounded-2xl bg-rose-500/10 p-4 text-sm text-rose-700 ring-1 ring-rose-400/20 dark:text-rose-200">
               <AlertTriangle className="mt-0.5 h-4 w-4" />
               <div>{errorMsg}</div>
+            </div>
+          )}
+
+          {/* loading */}
+          {mode === "loading" && (
+            <div className="mt-4 rounded-2xl p-4 cs-surface">
+              <div className="text-sm text-black/60 dark:text-white/60">
+                Fetching movie data…
+              </div>
             </div>
           )}
 
@@ -371,7 +404,7 @@ export default function Page() {
                   key={r.id}
                   type="button"
                   onClick={() => onPickResult(r.id)}
-                  className="group flex items-center gap-3 rounded-2xl bg-black/5 p-4 text-left ring-1 ring-black/10 transition hover:-translate-y-0.5 hover:ring-black/20 dark:bg-white/5 dark:ring-white/10 dark:hover:ring-white/20"
+                  className="group flex items-center gap-3 rounded-2xl cs-bubble p-4 text-left transition hover:-translate-y-0.5"
                 >
                   <div className="h-16 w-12 overflow-hidden rounded-lg bg-black/10 dark:bg-white/10">
                     {posterUrl(r.poster_path, "w200") ? (
@@ -404,19 +437,58 @@ export default function Page() {
         </motion.div>
 
         {/* Trending row */}
-        {trending.length > 0 && mode !== "ready" && (
+        {trending.length > 0 && mode !== "ready" && mode !== "loading" && (
           <motion.section
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-6"
           >
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
               <div className="text-sm font-medium text-black/70 dark:text-white/70">
                 New & Trending
               </div>
-              <div className="text-xs text-black/45 dark:text-white/45">
-                Curated from TMDB
-              </div>
+              <select
+                value={trendingType}
+                onChange={(e) => {
+                  setTrendingType(e.target.value as "movie" | "tv");
+                  setSelectedGenre("");
+                  setSelectedYear("");
+                }}
+                className="rounded-lg cs-bubble px-3 py-1 text-xs cursor-pointer cs-select"
+              >
+                <option value="movie">Movies</option>
+                <option value="tv">TV Shows</option>
+              </select>
+              <select
+                value={selectedGenre}
+                onChange={(e) => setSelectedGenre(e.target.value)}
+                className="rounded-lg cs-bubble px-3 py-1 text-xs cursor-pointer cs-select"
+              >
+                <option value="">All Genres</option>
+                <option value="28">Action</option>
+                <option value="12">Adventure</option>
+                <option value="16">Animation</option>
+                <option value="35">Comedy</option>
+                <option value="80">Crime</option>
+                <option value="18">Drama</option>
+                <option value="14">Fantasy</option>
+                <option value="27">Horror</option>
+                <option value="10749">Romance</option>
+                <option value="878">Sci-Fi</option>
+                <option value="53">Thriller</option>
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="rounded-lg cs-bubble px-3 py-1 text-xs cursor-pointer cs-select"
+              >
+                <option value="">All Years</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
@@ -425,7 +497,7 @@ export default function Page() {
                   key={m.id}
                   type="button"
                   onClick={() => onPickResult(m.id)}
-                  className="group flex flex-col gap-3 rounded-2xl bg-white/70 p-3 ring-1 ring-black/10 backdrop-blur-xl transition hover:-translate-y-0.5 hover:ring-black/20 dark:bg-white/[0.04] dark:ring-white/10 dark:hover:ring-white/20"
+                  className="group flex flex-col gap-3 rounded-2xl bg-gray-100 p-3 ring-1 ring-black/20 backdrop-blur-xl transition hover:-translate-y-0.5 hover:ring-black/30 dark:bg-white/[0.04] dark:ring-white/10 dark:hover:ring-white/20"
                 >
                   <div className="aspect-[2/3] w-full overflow-hidden rounded-lg bg-black/10 dark:bg-white/10">
                     {posterUrl(m.poster_path, "w200") ? (

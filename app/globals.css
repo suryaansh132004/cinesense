@@ -1,19 +1,243 @@
 @import "tailwindcss";
 
+/* =========================
+   THEME TOKENS
+   ========================= */
+
 /* Light defaults */
 :root {
-  --background: #f8f9fa;
-  --foreground: #0a0a0a;
+  --bg: #d1d5db;                 /* page background */
+  --fg: #000000;                 /* main text */
+
+  --surface: rgba(255, 255, 255, 0.90);  /* glass cards */
+  --surfaceSolid: #ffffff;       /* solid surfaces (dropdowns) */
+
+  --border: rgba(15, 23, 42, 0.10);
+  --borderStrong: rgba(15, 23, 42, 0.16);
+
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadowHover: 0 14px 40px rgba(15, 23, 42, 0.12);
+
+  --muted: rgba(0, 0, 0, 0.70);
+  --muted2: rgba(0, 0, 0, 0.55);
+
+  --ring: rgba(99, 102, 241, 0.35); /* indigo focus ring */
+
+  /* keep your existing names working */
+  --background: var(--bg);
+  --foreground: var(--fg);
 }
 
 /* Dark when next-themes adds class="dark" on <html> */
 html.dark {
-  --background: #070a12;
-  --foreground: #ededed;
+  --bg: #070a12;
+  --fg: rgba(255, 255, 255, 0.92);
+
+  --surface: rgba(255, 255, 255, 0.06);
+  --surfaceSolid: rgba(15, 23, 42, 0.85);
+
+  --border: rgba(255, 255, 255, 0.10);
+  --borderStrong: rgba(255, 255, 255, 0.18);
+
+  --shadow: 0 16px 50px rgba(0, 0, 0, 0.45);
+  --shadowHover: 0 20px 65px rgba(0, 0, 0, 0.55);
+
+  --muted: rgba(255, 255, 255, 0.62);
+  --muted2: rgba(255, 255, 255, 0.45);
+
+  --ring: rgba(99, 102, 241, 0.35);
+
+  --background: var(--bg);
+  --foreground: var(--fg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Force all text to be black in light mode, white in dark mode */
+:root p,
+:root div,
+:root span,
+:root h1,
+:root h2,
+:root h3,
+:root h4,
+:root h5,
+:root h6,
+:root a,
+:root label,
+:root input {
+  color: #000000 !important;
+}
+
+html.dark p,
+html.dark div,
+html.dark span,
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6,
+html.dark a,
+html.dark label,
+html.dark input {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* Exception: buttons in light mode are black, dark mode are white */
+:root button {
+  color: #000000 !important;
+}
+
+html.dark button {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* But icon buttons need proper colors */
+button svg {
+  color: inherit !important;
+}
+
+html.dark button svg {
+  color: inherit !important;
+}
+
+/* Exception: primary search button stays with its own text colors */
+:root button.bg-black {
+  color: #ffffff !important;
+}
+
+html.dark button.dark\:bg-white {
+  color: #000000 !important;
+}
+
+/* =========================
+   REUSABLE UI CLASSES
+   ========================= */
+
+.cs-surface {
+  background: rgba(229, 231, 235, 0.95);
+  border: 2px solid rgba(0, 0, 0, 0.20);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+html.dark .cs-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.cs-surface-solid {
+  background: var(--surfaceSolid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.cs-hover {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+.cs-hover:hover {
+  border-color: var(--borderStrong);
+  box-shadow: var(--shadowHover);
+}
+
+.cs-input {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--border);
+}
+
+html.dark .cs-input {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cs-input:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 0 0 4px var(--ring);
+}
+
+.cs-item-hover:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+html.dark .cs-item-hover:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Pills / bubbles that must stay visible in LIGHT mode */
+.cs-pill,
+.cs-bubble {
+  background: rgba(15, 23, 42, 0.06);      /* visible grey tint */
+  border: 1px solid rgba(15, 23, 42, 0.12); /* slightly stronger border */
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.cs-pill:hover,
+.cs-bubble:hover {
+  background: rgba(15, 23, 42, 0.10);
+  border-color: rgba(15, 23, 42, 0.20);
+}
+
+/* Dark mode variant keeps your subtle look */
+html.dark .cs-pill,
+html.dark .cs-bubble {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+html.dark .cs-pill:hover,
+html.dark .cs-bubble:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.20);
+}
+
+/* Search button - constant appearance in both themes */
+.cs-search-btn {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+html.dark .cs-search-btn {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* Select dropdown styling */
+select option {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+html.dark select option {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+html.dark select option:not(:checked) {
+  color: #ffffff !important;
+}
+
+/* Force select and option colors */
+.cs-select {
+  color: #000000;
+}
+
+html.dark .cs-select {
+  color: #ffffff;
+}
+
+.cs-select option {
+  color: #000000 !important;
+}
+
+html.dark .cs-select option {
+  color: #ffffff !important;
 }
