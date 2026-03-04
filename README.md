@@ -1,6 +1,7 @@
 # CineSense
 
 An AI-powered movie review sentiment analyzer that provides intelligent insights into movie reviews using Google's Gemini AI.
+( P.S: i have Mid-Terms going on so i could'nt give it my all with the light theme but i tried to make the most of the time i got)
 
 🔗 **Live Demo**: [https://cinesense132004.netlify.app](https://cinesense132004.netlify.app)
 
