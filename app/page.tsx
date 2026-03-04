@@ -48,7 +48,10 @@ type MovieApiResponse = {
   genres?: Array<{ id: number; name: string }>;
   poster_path?: string | null;
 
-  credits?: { cast?: CastMember[] };
+  credits?: { 
+    cast?: CastMember[];
+    crew?: Array<{ id: number; name: string; job: string }>;
+  };
   reviews?: { results?: Review[] };
   similar?: { results?: SearchResult[] };
 
